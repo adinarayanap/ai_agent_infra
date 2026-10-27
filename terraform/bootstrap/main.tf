@@ -15,6 +15,9 @@ data "aws_iam_policy_document" "terraform_state_key" {
 }
 
 resource "aws_kms_key" "terraform_state" {
+  # checkov:skip=CKV_AWS_111:Account-root delegation is the AWS-recommended KMS key policy pattern.
+  # checkov:skip=CKV_AWS_356:KMS key policies require resource "*" for key-level actions; access is constrained to this AWS account.
+  # checkov:skip=CKV2_AWS_64:The key policy is explicitly defined by the attached policy document.
   description             = "KMS key for Terraform state encryption"
   deletion_window_in_days = 30
   enable_key_rotation     = true
@@ -26,11 +29,10 @@ resource "aws_kms_alias" "terraform_state" {
   target_key_id = aws_kms_key.terraform_state.key_id
 }
 
-# checkov:skip=CKV_AWS_18:Access logging is deferred; this is a personal single-account Terraform state bucket.
-# checkov:skip=CKV_AWS_144:Cross-region replication is not required for a low-cost personal development state bucket.
-# checkov:skip=CKV2_AWS_62:Event notifications are not required for Terraform state storage.
-
 resource "aws_s3_bucket" "terraform_state" {
+  # checkov:skip=CKV_AWS_18:Access logging is deferred for this personal single-account Terraform state bucket.
+  # checkov:skip=CKV_AWS_144:Cross-region replication is not required for a low-cost personal development state bucket.
+  # checkov:skip=CKV2_AWS_62:Event notifications are not required for Terraform state storage.
   bucket = var.state_bucket_name
 
   tags = {
@@ -73,6 +75,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
       sse_algorithm     = "aws:kms"
       kms_master_key_id = aws_kms_key.terraform_state.arn
     }
+
     bucket_key_enabled = true
   }
 }
