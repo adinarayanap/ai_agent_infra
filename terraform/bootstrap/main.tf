@@ -1,7 +1,24 @@
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "terraform_state_key" {
+  statement {
+    sid       = "EnableIAMUserPermissions"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+}
+
 resource "aws_kms_key" "terraform_state" {
   description             = "KMS key for Terraform state encryption"
   deletion_window_in_days = 30
   enable_key_rotation     = true
+  policy                  = data.aws_iam_policy_document.terraform_state_key.json
 }
 
 resource "aws_kms_alias" "terraform_state" {
@@ -9,11 +26,34 @@ resource "aws_kms_alias" "terraform_state" {
   target_key_id = aws_kms_key.terraform_state.key_id
 }
 
+# checkov:skip=CKV_AWS_18:Access logging is deferred; this is a personal single-account Terraform state bucket.
+# checkov:skip=CKV_AWS_144:Cross-region replication is not required for a low-cost personal development state bucket.
+# checkov:skip=CKV2_AWS_62:Event notifications are not required for Terraform state storage.
+
 resource "aws_s3_bucket" "terraform_state" {
   bucket = var.state_bucket_name
 
   tags = {
     Name = var.state_bucket_name
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
+  bucket = aws_s3_bucket.terraform_state.id
+
+  rule {
+    id     = "expire-noncurrent-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
@@ -65,6 +105,11 @@ resource "aws_dynamodb_table" "terraform_lock" {
   }
 
   server_side_encryption {
+    enabled     = true
+    kms_key_arn = aws_kms_key.terraform_state.arn
+  }
+
+  point_in_time_recovery {
     enabled = true
   }
 
