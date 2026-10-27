@@ -24,7 +24,7 @@ variable "state_bucket_name" {
 variable "budget_amount_usd" {
   description = "Monthly AWS budget threshold in USD."
   type        = number
-  default     = 10
+  default     = "10"
 }
 
 variable "budget_alert_email" {
