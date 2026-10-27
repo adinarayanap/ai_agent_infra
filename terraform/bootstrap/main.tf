@@ -1,6 +1,9 @@
 data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "terraform_state_key" {
+  # checkov:skip=CKV_AWS_109:Account-root delegation is the AWS-recommended KMS key policy pattern.
+  # checkov:skip=CKV_AWS_111:Account-root delegation is required for KMS key administration.
+  # checkov:skip=CKV_AWS_356:KMS key policies require resource "*" for key-level actions; access is constrained to this AWS account.
   statement {
     sid       = "EnableIAMUserPermissions"
     effect    = "Allow"
@@ -15,9 +18,6 @@ data "aws_iam_policy_document" "terraform_state_key" {
 }
 
 resource "aws_kms_key" "terraform_state" {
-  # checkov:skip=CKV_AWS_111:Account-root delegation is the AWS-recommended KMS key policy pattern.
-  # checkov:skip=CKV_AWS_356:KMS key policies require resource "*" for key-level actions; access is constrained to this AWS account.
-  # checkov:skip=CKV2_AWS_64:The key policy is explicitly defined by the attached policy document.
   description             = "KMS key for Terraform state encryption"
   deletion_window_in_days = 30
   enable_key_rotation     = true
