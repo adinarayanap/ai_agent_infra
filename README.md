@@ -1,5 +1,4 @@
 # ai_agent_infra
-# ai_agent_infra
 <img width="1393" height="694" alt="WhatsApp Image 2026-10-26 at 13 26 24" src="https://github.com/user-attachments/assets/e2889324-8c90-4fab-b76c-68618ba9b870" />
 We are building an AI infrastructure platform for DevOps engineers—not a platform limited to two-tier applications. “Build a two-tier application”
 
@@ -87,5 +86,12 @@ flowchart TD
     SF --> OBS[CloudWatch logs metrics alarms]
     APPLY --> AUDIT[CloudTrail API audit]
 ```
+
+
+## Day 3 status
+
+The Bedrock hello-agent Lambda, IAM role, CloudWatch log group, and Terraform module are deployed. The Lambda uses the Bedrock Converse API and logs structured events with a correlation ID.
+
+Live Claude invocation is pending Bedrock model-access approval for the sandbox account. Once approved, the configured inference profile will be retested end to end.
 
 AWS documents the Step Functions human-approval pattern using API Gateway, Lambda, SNS email, and a paused workflow. We will adapt that pattern so that the approval action requires authentication rather than treating possession of an email link as sufficient authorization.
