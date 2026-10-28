@@ -1,5 +1,4 @@
 # ai_agent_infra
-# ai_agent_infra
 <img width="1393" height="694" alt="WhatsApp Image 2026-10-26 at 13 26 24" src="https://github.com/user-attachments/assets/e2889324-8c90-4fab-b76c-68618ba9b870" />
 We are building an AI infrastructure platform for DevOps engineers—not a platform limited to two-tier applications. “Build a two-tier application”
 
