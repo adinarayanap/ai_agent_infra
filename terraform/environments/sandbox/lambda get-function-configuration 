@@ -1,0 +1,31 @@
+{
+    "RoleName": "prompt-infra-sandbox-bedrock-hello-role",
+    "PolicyName": "prompt-infra-sandbox-bedrock-hello-policy",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "logs:PutLogEvents",
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:logs:*:*:*"
+            },
+            {
+                "Action": [
+                    "bedrock:InvokeModelWithResponseStream",
+                    "bedrock:InvokeModel",
+                    "bedrock:ConverseStream",
+                    "bedrock:Converse"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+                    "arn:aws:bedrock:us-east-1:140023407747:inference-profile/anthropic.claude-sonnet-5"
+                ]
+            }
+        ]
+    }
+}
