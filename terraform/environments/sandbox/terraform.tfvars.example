@@ -1,0 +1,2 @@
+# Replace with the absolute path to your locally built Lambda package.
+lambda_zip_path = "/absolute/path/to/ai_agent_infra/build/bedrock_hello.zip"
