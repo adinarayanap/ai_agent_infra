@@ -10,7 +10,12 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 .terraform.lock.hcl
-
+*.tfvars
+!*.tfvars.example
+*.tfplan
+*.zip
+.terraform/
+terraform.tfvars
 # Secrets and local environment files
 .env
 .env.*
@@ -23,4 +28,4 @@ override.tf.json
 .vscode/
 .idea/
 terraform/bootstrap/tf-debug.log
-**/*.swp
+
