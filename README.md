@@ -51,40 +51,23 @@ A DevOps engineer submits an infrastructure requirement. Amazon Bedrock converts
 
 ## 3. Architecture
 
-```
-flowchart TD
-    U[DevOps engineer] --> API[API Gateway]
-    AUTH[Cognito authentication] --> API
-    API --> O[Request orchestrator Lambda]
+```mermaid
+flowchart LR
+  U[User] --> UI[Chat UI]
+  UI --> API[API Gateway + Cognito]
+  API --> L[Lambda Agent]
+  L --> BR[Bedrock Claude]
+  L --> DB[(DynamoDB requests + audit)]
+  L --> SF[Step Functions]
+  SF --> GEN[Generate Terraform]
+  GEN --> VAL[terraform validate]
+  VAL --> POL[Checkov / OPA policy gate]
+  POL --> COST[Infracost cost gate]
+  COST --> APPR[Slack/SNS human approval]
+  APPR --> CB[CodeBuild apply]
+  CB --> SBX[Sandbox AWS account]
+  SBX --> MON[CloudWatch + CloudTrail + audit]
 
-    O --> DB[(DynamoDB requests and audit metadata)]
-    O --> B[Amazon Bedrock]
-    CAT[Approved module catalog and standards] --> O
-    B --> SPEC[Structured infrastructure proposal]
-
-    SPEC --> SF[Step Functions Standard workflow]
-    SF --> V[CodeBuild validation and plan]
-    V --> CHECKS[Terraform checks / Checkov / OPA / Infracost]
-    V --> ART[(S3 versioned encrypted artifacts)]
-
-    CHECKS --> G{All mandatory checks pass?}
-    G -->|No| FAIL[Reject and report]
-    G -->|Yes| WAIT[Create approval request]
-    WAIT --> SNS[SNS email notification]
-
-    SNS --> USER[Engineer opens review page]
-    USER --> REVIEW[Authenticated approval API]
-    REVIEW --> DB
-    REVIEW --> CALLBACK[Step Functions callback]
-
-    CALLBACK --> VERIFY[Verify approved artifact and stack status]
-    VERIFY --> APPLY[CodeBuild apply]
-    APPLY --> STS[Assume target deployment role]
-    STS --> TARGET[Workload account resources]
-
-    APPLY --> STATE[(S3 Terraform state)]
-    SF --> OBS[CloudWatch logs metrics alarms]
-    APPLY --> AUDIT[CloudTrail API audit]
 ```
 
 AWS documents the Step Functions human-approval pattern using API Gateway, Lambda, SNS email, and a paused workflow. We will adapt that pattern so that the approval action requires authentication rather than treating possession of an email link as sufficient authorization.
