@@ -31,3 +31,7 @@ variable "budget_alert_email" {
   description = "Email address that receives AWS Budget alerts."
   type        = string
 }
+variable "lambda_zip_path" {
+  description = "Path to the packaged Bedrock Lambda deployment package"
+  type        = string
+}

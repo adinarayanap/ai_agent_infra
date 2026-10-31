@@ -39,3 +39,7 @@ variable "lambda_zip_path" {
   type        = string
   default     = "/home/naghi/ai_agent_infra/build/bedrock_hello.zip"
 }
+variable "domain_suffix" {
+  description = "Unique suffix for the Cognito hosted UI domain"
+  type        = string
+}
