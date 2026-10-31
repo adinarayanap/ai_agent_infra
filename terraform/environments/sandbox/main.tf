@@ -8,12 +8,22 @@ locals {
   }
 }
 
+module "audit_table" {
+  source      = "./modules/audit-table"
+  project     = var.project
+  environment = var.environment
+  tags        = local.tags
+}
+
 module "bedrock_agent" {
   source = "./modules/bedrock-agent"
 
   project         = var.project
   environment     = var.environment
   lambda_zip_path = var.lambda_zip_path
+  audit_table_arn  = module.audit_table.audit_table_arn
+  audit_table_name = module.audit_table.audit_table_name
+  tags            = local.tags
 }
 
 module "api_auth" {
