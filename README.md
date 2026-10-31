@@ -87,4 +87,11 @@ flowchart TD
     APPLY --> AUDIT[CloudTrail API audit]
 ```
 
+
+## Day 3 status
+
+The Bedrock hello-agent Lambda, IAM role, CloudWatch log group, and Terraform module are deployed. The Lambda uses the Bedrock Converse API and logs structured events with a correlation ID.
+
+Live Claude invocation is pending Bedrock model-access approval for the sandbox account. Once approved, the configured inference profile will be retested end to end.
+
 AWS documents the Step Functions human-approval pattern using API Gateway, Lambda, SNS email, and a paused workflow. We will adapt that pattern so that the approval action requires authentication rather than treating possession of an email link as sufficient authorization.

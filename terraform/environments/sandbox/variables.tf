@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "bedrock_region" {
+  description = "Region for Bedrock"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "project" {
   description = "Project name."
   type        = string
@@ -38,4 +44,8 @@ variable "lambda_zip_path" {
   description = "Path to the Bedrock hello-agent Lambda deployment package."
   type        = string
   default     = "/home/naghi/ai_agent_infra/build/bedrock_hello.zip"
+}
+variable "domain_suffix" {
+  description = "Unique suffix for the Cognito hosted UI domain"
+  type        = string
 }

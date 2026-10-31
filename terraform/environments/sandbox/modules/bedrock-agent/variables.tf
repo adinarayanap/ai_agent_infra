@@ -29,3 +29,13 @@ variable "lambda_zip_path" {
   description = "Absolute or relative path to the packaged Lambda deployment archive."
   type        = string
 }
+
+variable "audit_table_arn" {
+  description = "ARN of the DynamoDB audit table."
+  type        = string
+}
+
+variable "audit_table_name" {
+  description = "Name of the DynamoDB audit table."
+  type        = string
+}
