@@ -12,3 +12,8 @@ output "log_group_name" {
   description = "CloudWatch log group for the Lambda function."
   value       = aws_cloudwatch_log_group.bedrock_lambda.name
 }
+
+
+output "bedrock_lambda_invoke_arn" {
+  value = aws_lambda_function.bedrock_hello.invoke_arn
+}

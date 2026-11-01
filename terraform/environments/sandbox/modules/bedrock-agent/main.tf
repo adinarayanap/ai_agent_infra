@@ -39,6 +39,14 @@ data "aws_iam_policy_document" "bedrock_lambda" {
       "arn:aws:bedrock:*::foundation-model/${var.bedrock_model_id}",
     ]
   }
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem"
+    ]
+    resources = [var.audit_table_arn]
+  }
 }
 
 resource "aws_iam_role" "bedrock_lambda" {
@@ -76,6 +84,7 @@ resource "aws_lambda_function" "bedrock_hello" {
     variables = {
       BEDROCK_REGION   = var.bedrock_region
       BEDROCK_MODEL_ID = "arn:aws:bedrock:${var.bedrock_region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.${var.bedrock_model_id}"
+      AUDIT_TABLE_NAME = var.audit_table_name
     }
   }
 
