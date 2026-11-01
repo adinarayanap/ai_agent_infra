@@ -39,3 +39,8 @@ variable "audit_table_name" {
   description = "Name of the DynamoDB audit table."
   type        = string
 }
+
+variable "notification_email" {
+  description = "Email address for alarm notifications."
+  type        = string
+}

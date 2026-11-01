@@ -23,6 +23,7 @@ module "bedrock_agent" {
   lambda_zip_path = var.lambda_zip_path
   audit_table_arn  = module.audit_table.audit_table_arn
   audit_table_name = module.audit_table.audit_table_name
+  notification_email = var.notification_email
   tags            = local.tags
 }
 

@@ -49,3 +49,9 @@ variable "domain_suffix" {
   description = "Unique suffix for the Cognito hosted UI domain"
   type        = string
 }
+
+variable "notification_email" {
+  description = "Email address for alarm notifications."
+  type        = string
+  default     = "ahmed.alnaghi@gmail.com" # Example
+}
