@@ -1,0 +1,122 @@
+[
+  {
+    "id": "out_of_scope_02",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "injection_01",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "uc2_valid_03",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "uc3_valid_04",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "out_of_scope_01",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "out_of_scope_03",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "injection_02",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "uc2_valid_02",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "uc3_valid_03",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "uc1_valid_02",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "injection_04",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "uc2_valid_04",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "out_of_scope_04",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "uc3_valid_01",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "injection_03",
+    "expected": "rejected",
+    "actual": "rejected",
+    "pass": true
+  },
+  {
+    "id": "uc3_valid_02",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "uc2_valid_01",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "uc1_valid_04",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "uc1_valid_01",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  },
+  {
+    "id": "uc1_valid_03",
+    "expected": "approved",
+    "actual": "approved",
+    "pass": true
+  }
+]
