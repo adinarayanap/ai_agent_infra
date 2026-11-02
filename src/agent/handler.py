@@ -5,59 +5,58 @@ import os
 from .prompts import SYSTEM_PROMPT
 from .config import MODEL_ID
 from .validators.plan_validator import validate_plan, PlanRejectedError
-from .tool_registry import TOOLS
+from .tools.registry import TOOL_REGISTRY, get_tool_specs
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("BEDROCK_REGION", "ap-south-1"))
 
-def invoke_planner(prompt, system_prompt):
-    # Updated to support toolConfig
-    response = bedrock.converse(
-        modelId=MODEL_ID,
-        system=[{"text": system_prompt}],
-        messages=[{"role": "user", "content": [{"text": prompt}]}],
-        toolConfig={"tools": TOOLS},
-        inferenceConfig={"maxTokens": 1000, "temperature": 0.2},
-    )
-    return response
-
 def handler(event, context):
     correlation_id = context.aws_request_id
+    body = json.loads(event.get("body") or "{}")
+    prompt = body.get("prompt")
 
-    try:
-        body = json.loads(event.get("body") or "{}")
-        prompt = body.get("prompt")
+    if not isinstance(prompt, str) or not prompt.strip():
+        return _response(400, {"error": "prompt must be a non-empty string"})
 
-        if not isinstance(prompt, str) or not prompt.strip():
-            return _response(400, {"error": "prompt must be a non-empty string"})
+    messages = [{"role": "user", "content": [{"text": prompt}]}]
+    max_iterations = 3
 
-        # Get response from Bedrock with tool support
-        response = invoke_planner(prompt, SYSTEM_PROMPT)
+    for i in range(max_iterations):
+        response = bedrock.converse(
+            modelId=MODEL_ID,
+            system=[{"text": SYSTEM_PROMPT}],
+            messages=messages,
+            toolConfig={"tools": get_tool_specs()},
+            inferenceConfig={"maxTokens": 1000, "temperature": 0.2},
+        )
+
         message = response["output"]["message"]
+        messages.append(message)
 
-        # Check if the model wants to use a tool
-        if "toolUse" in message["content"][0]:
+        if message["content"][0].get("toolUse"):
             tool_use = message["content"][0]["toolUse"]
-            plan = tool_use["input"]["plan"]
+            tool_name = tool_use["name"]
 
-            # Validate plan
-            try:
-                validated_plan = validate_plan(plan)
-            except PlanRejectedError as exc:
-                return _response(422, {"status": "rejected", "reason": str(exc)})
+            if tool_name not in TOOL_REGISTRY:
+                return _response(422, {"status": "rejected", "reason": "unknown_tool"})
 
-            # If valid, we would proceed to generate_terraform
-            return _response(200, {"status": "plan_validated", "plan": validated_plan})
+            # For Day 09, we only support get_approved_modules
+            if tool_name == "get_approved_modules":
+                tool_result = {
+                    "toolUseId": tool_use["toolUseId"],
+                    "content": [{"json": {"modules": ["s3_bucket", "vpc", "lambda_api"]}}]
+                }
+                messages.append({"role": "user", "content": [{"toolResult": tool_result}]})
+                continue # Loop again
 
-        # Fallback if no tool was used
-        return _response(422, {"status": "rejected", "reason": "no_tool_use"})
+            return _response(422, {"status": "rejected", "reason": "tool_not_implemented"})
 
-    except Exception:
-        logger.exception("Agent request failed")
-        return _response(500, {"error": "internal_error"})
+        # If no tool use, return final reply
+        return _response(200, {"reply": message["content"][0]["text"]})
 
+    return _response(422, {"status": "rejected", "reason": "max_iterations_reached"})
 
 def _response(status_code: int, body: dict) -> dict:
     return {
