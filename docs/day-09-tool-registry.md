@@ -3,6 +3,7 @@
 This document outlines the architectural changes implemented to move the agent from raw JSON output to structured Tool-Use.
 
 ---
+Day 09 is closed. The tool registry, Converse tool-use loop, plan validator, iteration guard, and security controls are implemented and verified through mocked unit tests. A live Bedrock tool-loop smoke test remains pending because of an authentication issue; basic Mistral Large 3 Converse access was previously verified. Resolving live authentication is the first Day 10 task before implementing UC1 Terraform generation.
 
 ## 1. Summary of Changes
 *   **Tool Registry**: Implemented `src/agent/tool_registry.py` to define the `generate_terraform` tool schema.
