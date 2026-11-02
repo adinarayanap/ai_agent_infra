@@ -8,10 +8,10 @@ import boto3
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-BEDROCK_REGION = os.environ.get("BEDROCK_REGION", "us-east-1")
+BEDROCK_REGION = os.environ.get("BEDROCK_REGION", "ap-south-1")
 MODEL_ID = os.environ.get(
     "BEDROCK_MODEL_ID",
-    "anthropic.claude-haiku-4-5-20251001-v1:0",
+    "mistral.mistral-large-3-675b-instruct",
 )
 AUDIT_TABLE_NAME = os.environ.get("AUDIT_TABLE_NAME")
 
@@ -67,7 +67,7 @@ def handler(event, context):
                     "content": [{"text": prompt}],
                 }
             ],
-            inferenceConfig={"maxTokens": 256, "temperature": 0.2},
+            inferenceConfig={"maxTokens": 1000, "temperature": 0.2},
         )
 
         reply = response["output"]["message"]["content"][0]["text"]
