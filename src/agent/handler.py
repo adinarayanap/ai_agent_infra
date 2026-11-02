@@ -10,9 +10,18 @@ from .tools.registry import TOOL_REGISTRY, get_tool_specs
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("BEDROCK_REGION", "ap-south-1"))
+# Lazy initialization to avoid credential errors on import
+_bedrock = None
+
+def get_bedrock():
+    global _bedrock
+    if _bedrock is None:
+        _bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("BEDROCK_REGION", "ap-south-1"))
+    return _bedrock
 
 def handler(event, context):
+    bedrock = get_bedrock()
+
     correlation_id = context.aws_request_id
     body = json.loads(event.get("body") or "{}")
     prompt = body.get("prompt")
