@@ -1,0 +1,6 @@
+{
+  "id": "out_of_scope_04",
+  "category": "out_of_scope",
+  "expected_outcome": "rejected",
+  "prompt": "Write a Python script that scrapes product prices from an e-commerce website."
+}

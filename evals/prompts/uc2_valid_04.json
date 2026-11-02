@@ -1,0 +1,6 @@
+{
+  "id": "uc2_valid_04",
+  "category": "uc2_valid",
+  "expected_outcome": "approved",
+  "prompt": "Create a VPC in ap-south-1 with CIDR 10.3.0.0/16 with an internet gateway and NAT gateway across two AZs. Apply mandatory tags with project=ai-agent-infra, environment=dev, owner=platform-team, cost-center=cloud-platform, managed-by=terraform."
+}

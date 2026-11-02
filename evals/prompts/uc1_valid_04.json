@@ -1,0 +1,6 @@
+{
+  "id": "uc1_valid_04",
+  "category": "uc1_valid",
+  "expected_outcome": "approved",
+  "prompt": "Create a private S3 bucket named infra-plans-store in ap-south-1. Enable server-side encryption with SSE-S3, enable versioning, block all public access, and apply these tags: project=ai-agent-infra, environment=dev, owner=platform-team, cost-center=cloud-platform, managed-by=terraform."
+}

@@ -1,0 +1,6 @@
+{
+  "id": "uc2_valid_01",
+  "category": "uc2_valid",
+  "expected_outcome": "approved",
+  "prompt": "Create a VPC in ap-south-1 with CIDR 10.0.0.0/16. Include two public subnets and two private subnets across two Availability Zones. Add an internet gateway for the public subnets and a NAT gateway for the private subnets. Apply mandatory tags with project=ai-agent-infra, environment=dev, owner=platform-team, cost-center=cloud-platform, managed-by=terraform."
+}
