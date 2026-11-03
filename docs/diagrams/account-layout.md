@@ -9,8 +9,8 @@ generated infrastructure is deployed.
 
 | Account | Account ID | Purpose |
 |---|---:|---|
-| Management | 569757034140 | IAM Identity Center, platform identity, future control plane |
-| Sandbox | 140023407747 | Safe target account for approved infrastructure deployments |
+| Management | 5697xxxxxxxxxx | IAM Identity Center, platform identity, future control plane |
+| Sandbox | 1400xxxxxxxx | Safe target account for approved infrastructure deployments |
 
 ## Access model
 
@@ -24,8 +24,8 @@ generated infrastructure is deployed.
 ```mermaid
 flowchart TD
     U[User: ahmed] --> SSO[IAM Identity Center]
-    SSO --> M[Management Account\n569757034140]
-    SSO --> SB[Sandbox Account\n140023407747]
+    SSO --> M[Management Account\n5697xxxxx]
+    SSO --> SB[Sandbox Account\n1400xxxxx]
 
     M --> ORG[AWS Organization]
     ORG --> SB
