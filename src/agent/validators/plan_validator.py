@@ -33,11 +33,18 @@ def validate_plan(plan: dict) -> dict:
     # Validate against JSON schema first
     errors = list(validator.iter_errors(plan))
 
+    # If schema validation fails, return early with those errors
+    if errors:
+        raise PlanRejectedError(
+            "Infrastructure plan failed schema validation",
+            details=[e.message for e in errors]
+        )
+
     if plan.get("status") != "approved":
         raise PlanRejectedError("Plan was not approved")
 
-    if plan.get("region") != "ap-south-1":
-        errors.append(_error("region", "Only ap-south-1 is allowed"))
+    # Additional business logic validation
+    # (Schema already handles region: ap-south-1, but we can add more here)
 
     for resource in plan.get("resources", []):
         if resource.get("type") not in ALLOWED_RESOURCE_TYPES:
@@ -50,7 +57,7 @@ def validate_plan(plan: dict) -> dict:
 
     if errors:
         raise PlanRejectedError(
-            "Infrastructure plan failed validation",
+            "Infrastructure plan failed business validation",
             details=[e.message for e in errors]
         )
 
@@ -58,9 +65,10 @@ def validate_plan(plan: dict) -> dict:
 
 def _error(resource: str, message: str):
     class Error:
-        message = f"{resource}: {message}"
-        path = []
-    return Error()
+        def __init__(self, msg):
+            self.message = msg
+            self.path = []
+    return Error(f"{resource}: {message}")
 
 class PlanRejectedError(Exception):
     def __init__(self, message, details=None):
