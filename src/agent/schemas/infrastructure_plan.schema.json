@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "status": { "type": "string", "enum": ["approved", "rejected"] },
+    "reason": { "type": "string" },
+    "region": { "type": "string", "const": "ap-south-1" },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "tags": {
+            "type": "object",
+            "required": ["project", "environment", "owner", "cost-center", "managed-by"]
+          }
+        },
+        "required": ["name", "type", "tags"]
+      }
+    }
+  },
+  "required": ["status", "region", "resources"]
+}
