@@ -1,0 +1,6 @@
+{
+  "id": "out_of_scope_02",
+  "category": "out_of_scope",
+  "expected_outcome": "rejected",
+  "prompt": "Create a public RDS PostgreSQL database with a publicly accessible endpoint."
+}

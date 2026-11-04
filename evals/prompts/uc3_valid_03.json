@@ -1,0 +1,6 @@
+{
+  "id": "uc3_valid_03",
+  "category": "uc3_valid",
+  "expected_outcome": "approved",
+  "prompt": "Create a serverless API in ap-south-1. Use API Gateway with a POST /notifications endpoint, a Python Lambda function to handle requests, and a DynamoDB table named notifications with a partition key notif_id. The DynamoDB table must use encryption and pay-per-request billing. Apply mandatory tags with project=ai-agent-infra, environment=dev, owner=platform-team, cost-center=cloud-platform, managed-by=terraform."
+}
