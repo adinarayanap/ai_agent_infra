@@ -47,13 +47,42 @@ def validate_plan(plan: dict) -> dict:
     # (Schema already handles region: ap-south-1, but we can add more here)
 
     for resource in plan.get("resources", []):
-        if resource.get("type") not in ALLOWED_RESOURCE_TYPES:
+        resource_name = resource.get("name", "unknown")
+        resource_type = resource.get("type")
+
+        if resource_type not in ALLOWED_RESOURCE_TYPES:
             errors.append(
                 _error(
-                    resource.get("name", "unknown"),
-                    f"Resource type not allowed: {resource.get('type')}"
+                    resource_name,
+                    f"Resource type not allowed: {resource_type}"
                 )
             )
+            continue
+
+        # UC1 S3 specific security checks
+        if resource_type == "aws_s3_bucket":
+            # N1 Negative Control: Public S3 access must be strictly prohibited
+            if resource.get("public_access") is True or resource.get("public_access_blocked") is False:
+                errors.append(
+                    _error(resource_name, "Public S3 access is strictly prohibited (N1 control).")
+                )
+            elif not resource.get("public_access_blocked", False):
+                errors.append(
+                    _error(resource_name, "S3 bucket must have public access blocked.")
+                )
+
+            # Check for encryption
+            if not resource.get("encryption_enabled", False):
+                errors.append(
+                    _error(resource_name, "S3 bucket must have server-side encryption enabled.")
+                )
+
+            # Check for versioning
+            if not resource.get("versioning_enabled", False):
+                errors.append(
+                    _error(resource_name, "S3 bucket must have versioning enabled.")
+                )
+
 
     if errors:
         raise PlanRejectedError(

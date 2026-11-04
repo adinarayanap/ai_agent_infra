@@ -46,6 +46,15 @@ Our platform solves the "Manual Infrastructure Bottleneck" by using an LLM to ge
 *   **Logic**: Our agent is now a "Planning Assistant." It must *plan* in JSON before *generating* Terraform. This creates an opportunity for a "Validation Gate."
 *   **Flow**: User Input -> Agent (Brain) -> JSON Plan -> **Validation Gate (Guardrails)** -> Terraform Generation.
 
+### Module 6: Deterministic Generation & Isolated Validation (Day 10)
+*   **Concepts**: Deterministic IaC Generation, Isolated Execution Sandbox, Security Verification.
+*   **Logic**: Moving from unconstrained HCL generation to approved deterministic templates for UC1 (Encrypted, versioned, private S3 bucket).
+*   **Why**:
+    *   **Determinism**: Free-form LLM HCL generation introduces hallucinations and configuration drifts. Templates guarantee exact compliance with security baselines.
+    *   **Isolated Validation**: `validate_terraform` executes `terraform fmt -check` and `terraform validate` in isolated temporary directories before code ever reaches deployment pipelines.
+    *   **Strict Tool Separation**: Separation of generation tools (`generate_terraform`, `validate_terraform`) from execution tools (`apply_terraform`, `destroy_terraform` are strictly forbidden).
+    *   **N1 Negative Control**: Public S3 access is blocked unconditionally at both plan-validation and generation gates.
+
 ---
 
 ## 4. Architectural Summary
@@ -57,8 +66,11 @@ graph TD
     Lambda -->|System Prompt| Agent[Agent Brain - Mistral]
     Agent -->|JSON Infrastructure Plan| Validator[Validator Module]
     Validator -->|Compliance Check| Status{Pass?}
-    Status -- Yes --> Terraform[Terraform Generator]
+    Status -- Yes --> Generator[generate_terraform (UC1 Template)]
+    Generator --> ValidatorTF[validate_terraform (fmt & validate)]
+    ValidatorTF -- Valid --> Artifact[Terraform Plan Artifact]
     Status -- No --> Error[Log/Reject]
+    ValidatorTF -- Invalid --> Error
     Lambda -->|Audit| DDB[(DynamoDB Audit Table)]
 ```
 
