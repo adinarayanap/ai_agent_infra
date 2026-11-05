@@ -1,4 +1,4 @@
-# src/modules/approved_modules.py
+# terraform/environments/sandbox/src/agent/modules/approved_modules.py
 
 approved_modules_catalog = [
     {
@@ -12,7 +12,13 @@ approved_modules_catalog = [
             "Private access",
             "No public policy or ACL",
         ],
-        "required_tags": ["project", "environment", "owner", "cost-center", "managed-by"],
+        "required_tags": [
+            "project",
+            "environment",
+            "owner",
+            "cost-center",
+            "managed-by",
+        ],
         "allowed_resource_types": [
             "aws_s3_bucket",
             "aws_s3_bucket_versioning",
@@ -30,7 +36,13 @@ approved_modules_catalog = [
             "Restricted security groups",
             "No SSH/RDP from 0.0.0.0/0",
         ],
-        "required_tags": ["project", "environment", "owner", "cost-center", "managed-by"],
+        "required_tags": [
+            "project",
+            "environment",
+            "owner",
+            "cost-center",
+            "managed-by",
+        ],
         "allowed_resource_types": [
             "aws_vpc",
             "aws_subnet",
@@ -49,7 +61,13 @@ approved_modules_catalog = [
             "HTTPS/TLS for API Gateway",
             "KMS encryption for DynamoDB",
         ],
-        "required_tags": ["project", "environment", "owner", "cost-center", "managed-by"],
+        "required_tags": [
+            "project",
+            "environment",
+            "owner",
+            "cost-center",
+            "managed-by",
+        ],
         "allowed_resource_types": [
             "aws_lambda_function",
             "aws_api_gateway_rest_api",
@@ -62,25 +80,65 @@ approved_modules_catalog = [
     },
 ]
 
+
 def get_module_by_prompt(prompt: str) -> dict | None:
-    """
-    Retrieves the most relevant approved module based on the user's prompt.
-    Returns None if no module matches.
-    """
-    if not prompt:
+    """Return the approved module matching an infrastructure prompt."""
+    if not isinstance(prompt, str) or not prompt.strip():
         return None
 
     prompt_lower = prompt.lower()
 
-    # Direct matches
-    if "s3" in prompt_lower or "bucket" in prompt_lower:
-        if "encrypt" in prompt_lower or "secure" in prompt_lower or "version" in prompt_lower or "private" in prompt_lower:
-            return next((m for m in approved_modules_catalog if m["module_name"] == "encrypted_s3_bucket"), None)
+    s3_keywords = (
+        "s3 bucket",
+        "s3",
+        "bucket",
+        "object storage",
+        "secure storage",
+    )
 
-    if "vpc" in prompt_lower or "subnet" in prompt_lower or "network" in prompt_lower:
-        return next((m for m in approved_modules_catalog if m["module_name"] == "vpc_public_private"), None)
+    vpc_keywords = (
+        "vpc",
+        "subnet",
+        "network",
+        "networking",
+    )
 
-    if "api" in prompt_lower or "lambda" in prompt_lower or "dynamodb" in prompt_lower or "serverless" in prompt_lower:
-        return next((m for m in approved_modules_catalog if m["module_name"] == "serverless_api"), None)
+    api_keywords = (
+        "serverless api",
+        "api gateway",
+        "lambda",
+        "dynamodb",
+        "serverless",
+    )
+
+    if any(keyword in prompt_lower for keyword in s3_keywords):
+        return next(
+            (
+                module
+                for module in approved_modules_catalog
+                if module["module_name"] == "encrypted_s3_bucket"
+            ),
+            None,
+        )
+
+    if any(keyword in prompt_lower for keyword in vpc_keywords):
+        return next(
+            (
+                module
+                for module in approved_modules_catalog
+                if module["module_name"] == "vpc_public_private"
+            ),
+            None,
+        )
+
+    if any(keyword in prompt_lower for keyword in api_keywords):
+        return next(
+            (
+                module
+                for module in approved_modules_catalog
+                if module["module_name"] == "serverless_api"
+            ),
+            None,
+        )
 
     return None
