@@ -69,6 +69,25 @@ resource "aws_cloudwatch_log_group" "bedrock_lambda" {
   tags = var.tags
 }
 
+resource "aws_bedrock_guardrail" "agent_guardrail" {
+  name                      = "${var.project}-${var.environment}-agent-guardrail"
+  blocked_input_messaging   = "Request blocked by policy"
+  blocked_outputs_messaging = "Response blocked by policy"
+  description               = "Guardrail for AI Agent Infra"
+  content_policy_config {
+    filters_config {
+      type            = "MISCONDUCT"
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+    }
+  }
+  tags = var.tags
+}
+
+resource "aws_bedrock_guardrail_version" "agent_guardrail_v1" {
+  guardrail_arn = aws_bedrock_guardrail.agent_guardrail.guardrail_arn
+}
+
 resource "aws_lambda_function" "bedrock_hello" {
   function_name = "${var.project}-${var.environment}-bedrock-hello"
   role          = aws_iam_role.bedrock_lambda.arn
@@ -82,9 +101,11 @@ resource "aws_lambda_function" "bedrock_hello" {
 
   environment {
     variables = {
-      BEDROCK_REGION   = var.bedrock_region
-      BEDROCK_MODEL_ID = "arn:aws:bedrock:${var.bedrock_region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.${var.bedrock_model_id}"
-      AUDIT_TABLE_NAME = var.audit_table_name
+      BEDROCK_REGION    = var.bedrock_region
+      BEDROCK_MODEL_ID  = "arn:aws:bedrock:${var.bedrock_region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.${var.bedrock_model_id}"
+      AUDIT_TABLE_NAME  = var.audit_table_name
+      GUARDRAIL_ID      = aws_bedrock_guardrail.agent_guardrail.guardrail_id
+      GUARDRAIL_VERSION = aws_bedrock_guardrail_version.agent_guardrail_v1.version
     }
   }
 

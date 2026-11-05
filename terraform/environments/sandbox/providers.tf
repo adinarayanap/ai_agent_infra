@@ -10,8 +10,8 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
-  profile = "sandbox" 
+  region  = var.aws_region
+  profile = "sandbox"
   default_tags {
     tags = {
       project     = var.project

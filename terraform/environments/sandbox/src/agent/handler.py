@@ -15,11 +15,28 @@ MODEL_ID = os.environ.get(
     "BEDROCK_MODEL_ID",
     "mistral.mistral-large-3-675b-instruct",
 )
+GUARDRAIL_ID = os.environ.get("GUARDRAIL_ID")
+GUARDRAIL_VERSION = os.environ.get("GUARDRAIL_VERSION")
 AUDIT_TABLE_NAME = os.environ.get("AUDIT_TABLE_NAME")
 
-bedrock = boto3.client("bedrock-runtime", region_name=BEDROCK_REGION)
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(AUDIT_TABLE_NAME)
+bedrock = None
+table = None
+
+
+def get_clients():
+    global bedrock, table
+
+    if bedrock is None:
+        bedrock = boto3.client(
+            "bedrock-runtime",
+            region_name=BEDROCK_REGION,
+        )
+
+    if table is None:
+        dynamodb = boto3.resource("dynamodb")
+        table = dynamodb.Table(AUDIT_TABLE_NAME)
+
+    return bedrock, table
 
 
 def load_system_prompt():
@@ -40,7 +57,8 @@ def build_retrieval_context(module):
         return ""
 
     constraints = "\n".join(
-        f"- {constraint}" for constraint in module.get("security_constraints", [])
+        f"- {constraint}"
+        for constraint in module.get("security_constraints", [])
     )
     tags = ", ".join(module.get("required_tags", []))
     resources = ", ".join(module.get("allowed_resource_types", []))
@@ -49,7 +67,8 @@ def build_retrieval_context(module):
         "\n\nApproved module context:\n"
         f"Module: {module.get('module_name')}\n"
         f"Description: {module.get('description')}\n"
-        f"Approved use cases: {', '.join(module.get('approved_use_cases', []))}\n"
+        f"Approved use cases: "
+        f"{', '.join(module.get('approved_use_cases', []))}\n"
         f"Security constraints:\n{constraints}\n"
         f"Required tags: {tags}\n"
         f"Allowed resource types: {resources}\n"
@@ -58,7 +77,14 @@ def build_retrieval_context(module):
     )
 
 
-def write_audit_status(request_id, status, prompt=None, reply=None, error=None):
+def write_audit_status(
+    request_id,
+    status,
+    audit_table,
+    prompt=None,
+    reply=None,
+    error=None,
+):
     item = {
         "RequestId": request_id,
         "Status": status,
@@ -75,7 +101,7 @@ def write_audit_status(request_id, status, prompt=None, reply=None, error=None):
     if error is not None:
         item["Error"] = error
 
-    table.put_item(Item=item)
+    audit_table.put_item(Item=item)
 
 
 def handler(event, context):
@@ -108,9 +134,12 @@ def handler(event, context):
             ),
         }
 
+    bedrock_client, audit_table = get_clients()
+
     write_audit_status(
         correlation_id,
         "RECEIVED",
+        audit_table,
         prompt=prompt,
     )
 
@@ -130,21 +159,44 @@ def handler(event, context):
 
         user_content = prompt + build_retrieval_context(approved_module)
 
-        response = bedrock.converse(
-            modelId=MODEL_ID,
-            system=[{"text": load_system_prompt()}],
-            messages=[
+        converse_kwargs = {
+            "modelId": MODEL_ID,
+            "system": [{"text": load_system_prompt()}],
+            "messages": [
                 {
                     "role": "user",
                     "content": [{"text": user_content}],
                 }
             ],
-            inferenceConfig={
+            "inferenceConfig": {
                 "maxTokens": 1000,
                 "temperature": 0.1,
                 "topP": 0.9,
             },
-        )
+        }
+
+        if GUARDRAIL_ID and GUARDRAIL_VERSION:
+            converse_kwargs["guardrailConfig"] = {
+                "guardrailIdentifier": GUARDRAIL_ID,
+                "guardrailVersion": GUARDRAIL_VERSION,
+            }
+
+        response = bedrock_client.converse(**converse_kwargs)
+
+        if response.get("stopReason") == "guardrail_intervened":
+            logger.warning(
+                json.dumps(
+                    {
+                        "event": "guardrail_intervention",
+                        "correlation_id": correlation_id,
+                    }
+                )
+            )
+            write_audit_status(correlation_id, "BLOCKED", audit_table, prompt=prompt)
+            return {
+                "statusCode": 403,
+                "body": json.dumps({"error": "Request blocked by policy"}),
+            }
 
         reply = response["output"]["message"]["content"][0]["text"]
 
@@ -166,6 +218,7 @@ def handler(event, context):
         write_audit_status(
             correlation_id,
             "COMPLETED",
+            audit_table,
             prompt=prompt,
             reply=reply,
         )
@@ -199,6 +252,7 @@ def handler(event, context):
         write_audit_status(
             correlation_id,
             "FAILED",
+            audit_table,
             prompt=prompt,
             error="Bedrock invocation failed",
         )

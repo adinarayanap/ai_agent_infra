@@ -11,9 +11,9 @@ resource "aws_kms_alias" "audit_table" {
 }
 
 resource "aws_dynamodb_table" "audit" {
-  name           = "${var.project}-${var.environment}-audit-table"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "RequestId"
+  name         = "${var.project}-${var.environment}-audit-table"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "RequestId"
 
   attribute {
     name = "RequestId"

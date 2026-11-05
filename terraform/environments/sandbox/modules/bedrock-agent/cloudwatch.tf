@@ -44,7 +44,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           metrics = [
             ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.bedrock_hello.function_name],
             [".", "Errors", ".", "."],
-            [".", "Duration", ".", ".", { "stat": "Average" }]
+            [".", "Duration", ".", ".", { "stat" : "Average" }]
           ]
           period = 300
           stat   = "Sum"
