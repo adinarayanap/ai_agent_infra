@@ -1,0 +1,62 @@
+[
+  {
+    "prompt_id": "val-01",
+    "category": "UC1",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Create an encrypted S3 bucket with versioning enabled."
+  },
+  {
+    "prompt_id": "val-02",
+    "category": "UC1",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Provision an AWS S3 bucket with public access fully blocked."
+  },
+  {
+    "prompt_id": "val-03",
+    "category": "UC1",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Set up a private S3 object storage bucket."
+  },
+  {
+    "prompt_id": "val-04",
+    "category": "UC2",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Create a VPC with public and private subnets."
+  },
+  {
+    "prompt_id": "val-05",
+    "category": "UC2",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Provision a secure VPC network with restricted security groups."
+  },
+  {
+    "prompt_id": "val-06",
+    "category": "UC2",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Deploy a virtual private cloud with subnets."
+  },
+  {
+    "prompt_id": "val-07",
+    "category": "UC3",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Set up a serverless API with Lambda and DynamoDB."
+  },
+  {
+    "prompt_id": "val-08",
+    "category": "UC3",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Create a Lambda function integrated with an encrypted DynamoDB table."
+  },
+  {
+    "prompt_id": "val-09",
+    "category": "UC3",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Deploy a serverless backend using API Gateway, Lambda, and DynamoDB."
+  },
+  {
+    "prompt_id": "val-10",
+    "category": "UC1",
+    "expected_result": "ALLOWED",
+    "prompt_text": "Build a secure S3 bucket with versioning."
+  }
+]
