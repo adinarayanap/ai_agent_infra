@@ -6,6 +6,9 @@ import time
 import boto3
 
 from agent.modules.approved_modules import get_module_by_prompt
+from agent.tools.generate_terraform import generate_terraform
+from agent.tools.validate_terraform import validate_terraform
+from agent.validators.plan_validator import PlanRejectedError, validate_plan
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -18,6 +21,8 @@ MODEL_ID = os.environ.get(
 GUARDRAIL_ID = os.environ.get("GUARDRAIL_ID")
 GUARDRAIL_VERSION = os.environ.get("GUARDRAIL_VERSION")
 AUDIT_TABLE_NAME = os.environ.get("AUDIT_TABLE_NAME")
+
+MAX_GENERATION_ATTEMPTS = 3
 
 bedrock = None
 table = None
@@ -77,6 +82,33 @@ def build_retrieval_context(module):
     )
 
 
+def build_converse_kwargs(user_content):
+    return {
+        "modelId": MODEL_ID,
+        "system": [{"text": load_system_prompt()}],
+        "messages": [
+            {
+                "role": "user",
+                "content": [{"text": user_content}],
+            }
+        ],
+        "inferenceConfig": {
+            "maxTokens": 1000,
+            "temperature": 0.1,
+            "topP": 0.9,
+        },
+    }
+
+
+def add_guardrail_config(converse_kwargs):
+    if GUARDRAIL_ID and GUARDRAIL_VERSION:
+        converse_kwargs["guardrailConfig"] = {
+            "guardrailIdentifier": GUARDRAIL_ID,
+            "guardrailVersion": GUARDRAIL_VERSION,
+        }
+    return converse_kwargs
+
+
 def write_audit_status(
     request_id,
     status,
@@ -102,6 +134,31 @@ def write_audit_status(
         item["Error"] = error
 
     audit_table.put_item(Item=item)
+
+
+def parse_model_reply(reply):
+    if not isinstance(reply, str):
+        return reply
+
+    try:
+        plan = json.loads(reply)
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+    return plan if isinstance(plan, dict) else None
+
+
+def validation_failed_response(correlation_id, errors):
+    return {
+        "statusCode": 422,
+        "body": json.dumps(
+            {
+                "correlation_id": correlation_id,
+                "status": "validation_failed",
+                "errors": errors,
+            }
+        ),
+    }
 
 
 def handler(event, context):
@@ -158,28 +215,9 @@ def handler(event, context):
             )
 
         user_content = prompt + build_retrieval_context(approved_module)
-
-        converse_kwargs = {
-            "modelId": MODEL_ID,
-            "system": [{"text": load_system_prompt()}],
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [{"text": user_content}],
-                }
-            ],
-            "inferenceConfig": {
-                "maxTokens": 1000,
-                "temperature": 0.1,
-                "topP": 0.9,
-            },
-        }
-
-        if GUARDRAIL_ID and GUARDRAIL_VERSION:
-            converse_kwargs["guardrailConfig"] = {
-                "guardrailIdentifier": GUARDRAIL_ID,
-                "guardrailVersion": GUARDRAIL_VERSION,
-            }
+        converse_kwargs = add_guardrail_config(
+            build_converse_kwargs(user_content)
+        )
 
         response = bedrock_client.converse(**converse_kwargs)
 
@@ -192,13 +230,165 @@ def handler(event, context):
                     }
                 )
             )
-            write_audit_status(correlation_id, "BLOCKED", audit_table, prompt=prompt)
+            write_audit_status(
+                correlation_id,
+                "BLOCKED",
+                audit_table,
+                prompt=prompt,
+            )
             return {
                 "statusCode": 403,
-                "body": json.dumps({"error": "Request blocked by policy"}),
+                "body": json.dumps(
+                    {"error": "Request blocked by policy"}
+                ),
             }
 
         reply = response["output"]["message"]["content"][0]["text"]
+        plan = parse_model_reply(reply)
+
+        is_uc3_request = isinstance(plan, dict) or not isinstance(reply, str)
+
+        if not is_uc3_request:
+            logger.info(
+                json.dumps(
+                    {
+                        "event": "agent_request_completed",
+                        "correlation_id": correlation_id,
+                        "model_id": MODEL_ID,
+                        "approved_module": (
+                            approved_module.get("module_name")
+                            if approved_module
+                            else None
+                        ),
+                    }
+                )
+            )
+
+            write_audit_status(
+                correlation_id,
+                "COMPLETED",
+                audit_table,
+                prompt=prompt,
+                reply=reply,
+            )
+
+            return {
+                "statusCode": 200,
+                "body": json.dumps(
+                    {
+                        "correlation_id": correlation_id,
+                        "model_id": MODEL_ID,
+                        "approved_module": (
+                            approved_module.get("module_name")
+                            if approved_module
+                            else None
+                        ),
+                        "reply": reply,
+                    }
+                ),
+            }
+
+        try:
+            validate_plan(plan)
+        except PlanRejectedError as error:
+            logger.warning(
+                json.dumps(
+                    {
+                        "event": "plan_validation_failed",
+                        "correlation_id": correlation_id,
+                        "error": str(error),
+                    }
+                )
+            )
+            write_audit_status(
+                correlation_id,
+                "VALIDATION_FAILED",
+                audit_table,
+                prompt=prompt,
+                error=str(error),
+            )
+            return validation_failed_response(correlation_id, [str(error)])
+
+        generated = generate_terraform(plan)
+        validation = validate_terraform(generated["files"])
+        attempts = 1
+
+        while not validation["valid"] and attempts < MAX_GENERATION_ATTEMPTS:
+            feedback = "\n".join(
+                f"- {error}" for error in validation["errors"]
+            )
+            retry_content = (
+                f"{user_content}\n\n"
+                "The previous Terraform generation failed validation. "
+                "Correct every error and return only the corrected JSON plan.\n"
+                f"Validation errors:\n{feedback}"
+            )
+            retry_kwargs = add_guardrail_config(
+                build_converse_kwargs(retry_content)
+            )
+
+            response = bedrock_client.converse(**retry_kwargs)
+            attempts += 1
+
+            if response.get("stopReason") == "guardrail_intervened":
+                write_audit_status(
+                    correlation_id,
+                    "BLOCKED",
+                    audit_table,
+                    prompt=prompt,
+                )
+                return {
+                    "statusCode": 403,
+                    "body": json.dumps(
+                        {"error": "Request blocked by policy"}
+                    ),
+                }
+
+            reply = response["output"]["message"]["content"][0]["text"]
+            plan = parse_model_reply(reply)
+
+            if not isinstance(plan, dict):
+                validation = {
+                    "valid": False,
+                    "errors": ["Model returned invalid JSON."],
+                }
+                continue
+
+            try:
+                validate_plan(plan)
+            except PlanRejectedError as error:
+                validation = {
+                    "valid": False,
+                    "errors": [str(error)],
+                }
+                continue
+
+            generated = generate_terraform(plan)
+            validation = validate_terraform(generated["files"])
+
+        if not validation["valid"]:
+            logger.warning(
+                json.dumps(
+                    {
+                        "event": "terraform_validation_failed",
+                        "correlation_id": correlation_id,
+                        "attempts": attempts,
+                    }
+                )
+            )
+            write_audit_status(
+                correlation_id,
+                "VALIDATION_FAILED",
+                audit_table,
+                prompt=prompt,
+                error="Terraform validation failed",
+            )
+            return validation_failed_response(
+                correlation_id,
+                validation["errors"],
+            )
+
+        generated_hcl = generated["files"]["main.tf"]
 
         logger.info(
             json.dumps(
@@ -211,6 +401,7 @@ def handler(event, context):
                         if approved_module
                         else None
                     ),
+                    "generation_attempts": attempts,
                 }
             )
         )
@@ -220,7 +411,7 @@ def handler(event, context):
             "COMPLETED",
             audit_table,
             prompt=prompt,
-            reply=reply,
+            reply=generated_hcl,
         )
 
         return {
@@ -234,7 +425,8 @@ def handler(event, context):
                         if approved_module
                         else None
                     ),
-                    "reply": reply,
+                    "generation_attempts": attempts,
+                    "files": generated["files"],
                 }
             ),
         }
